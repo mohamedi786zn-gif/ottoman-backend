@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: ottoman-empire-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
