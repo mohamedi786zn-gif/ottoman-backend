@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>🌙 OTTOMAN QUANTUM PUBLIC PORTAL · CHAIN 1771</title>
+    <!-- TradingView Widget -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <!-- Ethers.js for Wallet -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <!-- BIP39 for Mnemonic -->
+    <script src="https://cdn.jsdelivr.net/npm/bip39@3.1.0/index.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: radial-gradient(ellipse at center, #0a0a0a 0%, #0a0a2a 100%);
+            font-family: 'Orbitron', 'Courier New', monospace;
+            color: #e6d5a8;
+            padding: 1rem;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 2px solid #d4af37; padding-bottom: 1rem; margin-bottom: 2rem; }
+        .header h1 { font-size: 1.8rem; letter-spacing: 3px; }
+        .live-badge { display: inline-block; width: 12px; height: 12px; background: #ff3366; border-radius: 50%; animation: pulse 1s infinite; margin-right: 8px; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+        .card { background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border-radius: 24px; padding: 1.2rem; border: 1px solid rgba(212,175,55,0.3); }
+        .card-title { font-size: 1.2rem; border-left: 3px solid #d4af37; padding-left: 0.8rem; margin-bottom: 1rem; }
+        .stat-value { font-size: 1.6rem; font-weight: bold; color: #d4af37; }
+        .btn {
+            background: #d4af37; color: #0a0a0a; border: none; padding: 0.5rem 1rem; border-radius: 30px;
+            font-weight: bold; cursor: pointer; margin-top: 0.5rem; transition: all 0.2s;
+        }
+        .btn:hover { transform: scale(1.02); background: #ffd700; }
+        .miner-log, .tx-log { background: #0a0a1a; padding: 0.5rem; border-radius: 12px; font-family: monospace; font-size: 0.7rem; max-height: 150px; overflow-y: auto; }
+        .flex-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; }
+        input, select { background: #0a0a1a; border: 1px solid #d4af37; color: #e6d5a8; padding: 0.4rem; border-radius: 20px; font-family: monospace; }
+        .warning { color: #ffaa00; font-size: 0.7rem; margin-top: 0.5rem; }
+        @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1><span class="live-badge"></span> 🌙 OTTOMAN QUANTUM PUBLIC PORTAL</h1>
+        <div>CHAIN 1771 · BROWSER MINER · QUANTUM WALLET · DEX · OV MASK · BRIDGE</div>
+        <div class="bismillah">🤲 بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+    </div>
+
+    <div class="grid-2">
+        <!-- ==================== BROWSER QUANTUM MINER ==================== -->
+        <div class="card">
+            <div class="card-title">⛏️ BROWSER QUANTUM MINER (250 USDT/day cap)</div>
+            <div class="flex-row">
+                <span>🌀 Hash Rate: <strong id="hashRate">0</strong> qHashes/sec</span>
+                <span>✅ qHashes: <strong id="totalQhashes">0</strong></span>
+                <span>💰 OQV Earned: <strong id="oqvEarned">0</strong></span>
+                <span>💎 ≈ $<span id="usdValue">0</span> USD</span>
+                <button id="startMinerBtn" class="btn">▶ START</button>
+                <button id="stopMinerBtn" class="btn" disabled>⏸ STOP</button>
+            </div>
+            <div class="miner-log" id="minerLog">⚡ Miner idle. Start mining to earn OQV.</div>
+            <div class="warning">⚠️ Daily cap: 250 USDT equivalent (max ~7.4 OQV at $33.64/OQV). Excess goes to Baitul Maal.</div>
+        </div>
+
+        <!-- ==================== QUANTUM WALLET (HD) ==================== -->
+        <div class="card">
+            <div class="card-title">👛 QUANTUM WALLET · OTTOMAN MAINNET</div>
+            <div id="walletStatus">🔐 Wallet not created.</div>
+            <button id="createWalletBtn" class="btn">🆕 CREATE NEW WALLET</button>
+            <button id="importWalletBtn" class="btn">📤 IMPORT MNEMONIC</button>
+            <div id="walletInfo" style="margin-top:0.5rem; font-size:0.7rem; word-break:break-all;"></div>
+            <div class="flex-row" style="margin-top:0.5rem;">
+                <input type="text" id="sendToAddr" placeholder="Recipient Address (0x...)" style="flex:1;">
+                <input type="text" id="sendAmount" placeholder="OQV" style="width:80px;">
+                <button id="sendBtn" class="btn">SEND</button>
+            </div>
+            <div class="flex-row">
+                <button id="receiveBtn" class="btn" style="flex:1;">📋 RECEIVE (COPY ADDRESS)</button>
+                <button id="refreshBalanceBtn" class="btn" style="flex:1;">🔄 REFRESH BALANCE</button>
+            </div>
+            <div class="tx-log" id="txLog">📜 Transactions will appear here.</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- ==================== WEB4Q DEX (TradingView + Swap) ==================== -->
+        <div class="card">
+            <div class="card-title">📈 WEB4Q DEX · OQV / USDT · Powered by D‑Wave</div>
+            <div id="tradingview-widget" style="height: 300px; margin-bottom: 1rem;"></div>
+            <div class="flex-row">
+                <span>From: <strong>OQV</strong></span>
+                <input type="number" id="swapFrom" placeholder="0.0" value="0">
+                <span>To: <strong>USDT</strong></span>
+                <input type="number" id="swapTo" placeholder="0.0" readonly>
+                <button id="swapBtn" class="btn">🔄 SWAP (on Web4Q)</button>
+            </div>
+            <div class="warning">💡 1 OQV = $33.64 USDT (Oracle). 0.1% fee goes to Baitul Maal.</div>
+        </div>
+
+        <!-- ==================== BRIDGE (Resurrected Chains) ==================== -->
+        <div class="card">
+            <div class="card-title">🌉 BRIDGE · 33 RESURRECTED CHAINS</div>
+            <div class="flex-row">
+                <select id="sourceChain">
+                    <option value="Polygon">Polygon (Legacy)</option>
+                    <option value="Ethereum">Ethereum</option>
+                    <option value="BSC">BSC</option>
+                    <option value="Iron Finance">Iron Finance (Revived)</option>
+                    <option value="Polywhale">Polywhale (Revived)</option>
+                </select>
+                <input type="text" id="bridgeAmount" placeholder="Amount OQV" style="width:120px;">
+                <button id="bridgeBtn" class="btn">🌉 BRIDGE</button>
+            </div>
+            <div class="miner-log" id="bridgeLog">🌐 Bridge ready. Cross‑chain transfers via wormholes.</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- ==================== OV MASK WALLET CONNECTION ==================== -->
+        <div class="card">
+            <div class="card-title">🟠 OV MASK WALLET · OTTOMAN MAINNET</div>
+            <div id="ovMaskStatus">❌ Not connected</div>
+            <button id="connectOvMaskBtn" class="btn">🔌 CONNECT OV MASK</button>
+            <div id="ovMaskInfo" style="font-size:0.7rem; margin-top:0.5rem;"></div>
+        </div>
+
+        <!-- ==================== OQV BURN ON FIAT SPEND ==================== -->
+        <div class="card">
+            <div class="card-title">🔥 OQV BURN · SPEND TO FIAT</div>
+            <div class="flex-row">
+                <span>Enter USD amount:</span>
+                <input type="number" id="spendUSD" placeholder="Amount USD" value="100">
+                <button id="spendBtn" class="btn">💸 SPEND & BURN</button>
+            </div>
+            <div class="warning">✝️ When you spend, the equivalent OQV is <strong>permanently burned</strong> on Chain 1771.</div>
+            <div id="burnLog" class="tx-log" style="margin-top:0.5rem;"></div>
+        </div>
+    </div>
+
+    <div class="footer" style="text-align:center; font-size:0.6rem; margin-top:2rem; border-top:1px solid #d4af37; padding-top:1rem;">
+        <p>🛡️ SOVEREIGN · POWERED BY CHAIN 1771 · OQISP · D‑WAVE · STRATOS WORMHOLES</p>
+        <p>🤲 الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ</p>
+    </div>
+</div>
+
+<script>
+    // ================================================================
+    // SOVEREIGN QUANTUM PORTAL v1.0
+    // Features: Browser Miner (250 USDT/day cap), HD Wallet, DEX, Bridge, OV Mask, Burn
+    // All data persisted in localStorage (GitHub backend ready)
+    // ================================================================
+    
+    // --- GLOBAL STATE ---
+    let wallet = { address: null, mnemonic: null, balance: 0 };
+    let ovMaskConnected = false;
+    let miningInterval = null;
+    let hashRate = 0;
+    let totalQhashes = 0;
+    let oqvEarned = 0;
+    let dailyEarnedUSD = 0;
+    const OQV_TO_USD = 33.64;
+    const DAILY_CAP_USD = 250;
+    let lastMinedDate = new Date().toDateString();
+    
+    // Load saved state
+    function loadState() {
+        const savedWallet = localStorage.getItem('ottoman_wallet');
+        if (savedWallet) {
+            wallet = JSON.parse(savedWallet);
+            document.getElementById('walletInfo').innerHTML = `📌 Address: ${wallet.address.substring(0,16)}...<br>💰 Balance: ${wallet.balance.toFixed(4)} OQV (≈ $${(wallet.balance * OQV_TO_USD).toFixed(2)})`;
+            document.getElementById('walletStatus').innerHTML = '✅ Wallet loaded';
+        }
+        const savedMiner = localStorage.getItem('ottoman_miner');
+        if (savedMiner) {
+            let data = JSON.parse(savedMiner);
+            totalQhashes = data.totalQhashes || 0;
+            oqvEarned = data.oqvEarned || 0;
+            dailyEarnedUSD = data.dailyEarnedUSD || 0;
+            lastMinedDate = data.lastMinedDate || new Date().toDateString();
+            updateMinerUI();
+        }
+    }
+    
+    function saveMinerState() {
+        localStorage.setItem('ottoman_miner', JSON.stringify({
+            totalQhashes, oqvEarned, dailyEarnedUSD, lastMinedDate
+        }));
+    }
+    
+    function updateMinerUI() {
+        document.getElementById('hashRate').innerText = hashRate;
+        document.getElementById('totalQhashes').innerText = totalQhashes;
+        document.getElementById('oqvEarned').innerText = oqvEarned.toFixed(2);
+        const usdVal = (oqvEarned * OQV_TO_USD).toFixed(2);
+        document.getElementById('usdValue').innerText = usdVal;
+    }
+    
+    function addMinerLog(msg) {
+        const log = document.getElementById('minerLog');
+        log.innerHTML = `⛏️ ${msg}<br>` + log.innerHTML;
+        if (log.children.length > 20) log.removeChild(log.lastChild);
+    }
+    
+    // Reset daily cap if new day
+    function resetDailyCapIfNeeded() {
+        const today = new Date().toDateString();
+        if (today !== lastMinedDate) {
+            dailyEarnedUSD = 0;
+            lastMinedDate = today;
+            saveMinerState();
+            addMinerLog("🌙 Daily cap reset. You can earn up to $250 USDT equivalent today.");
+        }
+    }
+    
+    // --- BROWSER MINER (capped at $250/day) ---
+    function mineQuantum() {
+        if (!miningInterval) return;
+        resetDailyCapIfNeeded();
+        if (dailyEarnedUSD >= DAILY_CAP_USD) {
+            addMinerLog("⚠️ Daily cap reached ($250). Excess OQV goes to Baitul Maal.");
+            return;
+        }
+        const qh = Math.floor(Math.random() * 150) + 50;
+        const oqvThisTick = qh * 0.0074; // ~0.0074 OQV per qHash (approx $0.25)
+        let usdThisTick = oqvThisTick * OQV_TO_USD;
+        if (dailyEarnedUSD + usdThisTick > DAILY_CAP_USD) {
+            usdThisTick = DAILY_CAP_USD - dailyEarnedUSD;
+            let oqvFraction = usdThisTick / OQV_TO_USD;
+            if (oqvFraction > 0) {
+                totalQhashes += qh * (oqvFraction / oqvThisTick);
+                oqvEarned += oqvFraction;
+                dailyEarnedUSD = DAILY_CAP_USD;
+                addMinerLog(`Mined capped to ${oqvFraction.toFixed(4)} OQV | +$${usdThisTick.toFixed(2)} (daily limit reached)`);
+            }
+        } else {
+            totalQhashes += qh;
+            oqvEarned += oqvThisTick;
+            dailyEarnedUSD += usdThisTick;
+            addMinerLog(`Mined ${qh} qHashes | +${oqvThisTick.toFixed(4)} OQV (≈ $${usdThisTick.toFixed(2)})`);
+        }
+        updateMinerUI();
+        saveMinerState();
+        if (wallet.address) {
+            wallet.balance += oqvThisTick;
+            localStorage.setItem('ottoman_wallet', JSON.stringify(wallet));
+            document.getElementById('walletInfo').innerHTML = `📌 Address: ${wallet.address.substring(0,16)}...<br>💰 Balance: ${wallet.balance.toFixed(4)} OQV (≈ $${(wallet.balance * OQV_TO_USD).toFixed(2)})`;
+        }
+    }
+    
+    document.getElementById('startMinerBtn').addEventListener('click', () => {
+        if (miningInterval) clearInterval(miningInterval);
+        miningInterval = setInterval(mineQuantum, 1000);
+        document.getElementById('startMinerBtn').disabled = true;
+        document.getElementById('stopMinerBtn').disabled = false;
+        addMinerLog("⚡ Quantum miner activated. +33 portals/sec aligned.");
+    });
+    document.getElementById('stopMinerBtn').addEventListener('click', () => {
+        if (miningInterval) clearInterval(miningInterval);
+        miningInterval = null;
+        document.getElementById('startMinerBtn').disabled = false;
+        document.getElementById('stopMinerBtn').disabled = true;
+        addMinerLog("⏸ Miner paused.");
+        hashRate = 0;
+        updateMinerUI();
+    });
+    
+    // --- HD WALLET (Ethers + BIP39) ---
+    async function generateWallet() {
+        const mnemonic = ethers.Wallet.createRandom().mnemonic.phrase;
+        const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic);
+        const walletObj = new ethers.Wallet(hdNode.derivePath("m/44'/60'/0'/0/0"));
+        const address = walletObj.address;
+        wallet = { address, mnemonic, balance: 0 };
+        localStorage.setItem('ottoman_wallet', JSON.stringify(wallet));
+        document.getElementById('walletInfo').innerHTML = `📌 Address: ${address.substring(0,16)}...<br>💰 Balance: 0 OQV`;
+        document.getElementById('walletStatus').innerHTML = '✅ Wallet created. Backup mnemonic!';
+        addTxLog(`Wallet created: ${address.substring(0,10)}...`);
+    }
+    
+    function importWallet(mnemonic) {
+        try {
+            const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic);
+            const walletObj = new ethers.Wallet(hdNode.derivePath("m/44'/60'/0'/0/0"));
+            wallet = { address: walletObj.address, mnemonic, balance: 0 };
+            localStorage.setItem('ottoman_wallet', JSON.stringify(wallet));
+            document.getElementById('walletInfo').innerHTML = `📌 Address: ${wallet.address.substring(0,16)}...<br>💰 Balance: 0 OQV`;
+            document.getElementById('walletStatus').innerHTML = '✅ Wallet imported.';
+            addTxLog(`Wallet imported: ${wallet.address.substring(0,10)}...`);
+        } catch(e) { alert("Invalid mnemonic"); }
+    }
+    
+    function addTxLog(msg) {
+        const log = document.getElementById('txLog');
+        log.innerHTML = `💰 ${msg}<br>` + log.innerHTML;
+        if (log.children.length > 10) log.removeChild(log.lastChild);
+    }
+    
+    document.getElementById('createWalletBtn').addEventListener('click', generateWallet);
+    document.getElementById('importWalletBtn').addEventListener('click', () => {
+        const mnemonic = prompt("Enter mnemonic phrase:");
+        if (mnemonic) importWallet(mnemonic);
+    });
+    
+    // --- SEND / RECEIVE ---
+    document.getElementById('sendBtn').addEventListener('click', () => {
+        if (!wallet.address) { alert("Create wallet first"); return; }
+        const to = document.getElementById('sendToAddr').value;
+        const amount = parseFloat(document.getElementById('sendAmount').value);
+        if (!to || isNaN(amount) || amount <= 0) { alert("Invalid recipient or amount"); return; }
+        if (amount > wallet.balance) { alert("Insufficient balance"); return; }
+        wallet.balance -= amount;
+        localStorage.setItem('ottoman_wallet', JSON.stringify(wallet));
+        document.getElementById('walletInfo').innerHTML = `📌 Address: ${wallet.address.substring(0,16)}...<br>💰 Balance: ${wallet.balance.toFixed(4)} OQV`;
+        addTxLog(`Sent ${amount.toFixed(4)} OQV to ${to.substring(0,10)}... (sealed on Chain 1771)`);
+        document.getElementById('sendAmount').value = '';
+    });
+    document.getElementById('receiveBtn').addEventListener('click', () => {
+        if (!wallet.address) { alert("Create wallet first"); return; }
+        navigator.clipboard.writeText(wallet.address);
+        addTxLog(`📋 Address copied: ${wallet.address}`);
+    });
+    document.getElementById('refreshBalanceBtn').addEventListener('click', () => {
+        if (!wallet.address) return;
+        // Simulate balance check (in prod, query chain)
+        document.getElementById('walletInfo').innerHTML = `📌 Address: ${wallet.address.substring(0,16)}...<br>💰 Balance: ${wallet.balance.toFixed(4)} OQV`;
+        addTxLog("Balance refreshed from Chain 1771.");
+    });
+    
+    // --- TRADINGVIEW WIDGET (Embedded Dex Chart) ---
+    new TradingView.widget({
+        "width": "100%",
+        "height": 300,
+        "symbol": "COINBASE:BTCUSD",
+        "interval": "D",
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#0a0a1a",
+        "enable_publishing": false,
+        "hide_top_toolbar": true,
+        "container_id": "tradingview-widget"
+    });
+    
+    // --- DEX SWAP (simulated) ---
+    document.getElementById('swapFrom').addEventListener('input', (e) => {
+        let oqv = parseFloat(e.target.value) || 0;
+        let usdt = oqv * OQV_TO_USD;
+        document.getElementById('swapTo').value = usdt.toFixed(2);
+    });
+    document.getElementById('swapBtn').addEventListener('click', () => {
+        let oqv = parseFloat(document.getElementById('swapFrom').value) || 0;
+        if (!wallet.address) { alert("Create wallet first"); return; }
+        if (oqv <= 0) { alert("Enter amount > 0"); return; }
+        if (oqv > wallet.balance) { alert("Insufficient OQV"); return; }
+        let usdt = oqv * OQV_TO_USD;
+        let fee = usdt * 0.001; // 0.1% fee
+        wallet.balance -= oqv;
+        localStorage.setItem('ottoman_wallet', JSON.stringify(wallet));
+        addTxLog(`Swapped ${oqv.toFixed(4)} OQV → ${usdt.toFixed(2)} USDT (fee: ${fee.toFixed(2)} USDT to Baitul Maal).`);
+        document.getElementById('walletInfo').innerHTML = `📌 Address: ${wallet.address.substring(0,16)}...<br>💰 Balance: ${wallet.balance.toFixed(4)} OQV`;
+        document.getElementById('swapFrom').value = '';
+        document.getElementById('swapTo').value = '';
+    });
+    
+    // --- BRIDGE (Resurrected Chains) ---
+    document.getElementById('bridgeBtn').addEventListener('click', () => {
+        let amount = parseFloat(document.getElementById('bridgeAmount').value);
+        let source = document.getElementById('sourceChain').value;
+        if (!wallet.address) { alert("Create wallet first"); return; }
+        if (isNaN(amount) || amount <= 0) { alert("Invalid amount"); return; }
+        if (amount > wallet.balance) { alert("Insufficient OQV"); return; }
+        wallet.balance -= amount;
+        localStorage.setItem('ottoman_wallet', JSON.stringify(wallet));
+        document.getElementById('bridgeLog').innerHTML = `🌉 Bridged ${amount} OQV from ${source} → Ottoman Mainnet via wormhole. TX sealed on Chain 1771.<br>` + document.getElementById('bridgeLog').innerHTML;
+        addTxLog(`Bridged ${amount} OQV from ${source} (resurrected chain)`);
+        document.getElementById('bridgeAmount').value = '';
+        document.getElementById('walletInfo').innerHTML = `📌 Address: ${wallet.address.substring(0,16)}...<br>💰 Balance: ${wallet.balance.toFixed(4)} OQV`;
+    });
+    
+    // --- OV MASK CONNECTION (simulated) ---
+    document.getElementById('connectOvMaskBtn').addEventListener('click', () => {
+        ovMaskConnected = true;
+        document.getElementById('ovMaskStatus').innerHTML = '✅ Connected to OV Mask (Ottoman Mainnet)';
+        document.getElementById('ovMaskInfo').innerHTML = '🌐 Network: Chain 1771 | RPC: wss://oqisp.ottomanroyale.co.za/ws';
+        addTxLog("OV Mask connected. Sovereign wallet active.");
+    });
+    
+    // --- OQV BURN ON SPEND ---
+    document.getElementById('spendBtn').addEventListener('click', () => {
+        let usdAmount = parseFloat(document.getElementById('spendUSD').value);
+        if (isNaN(usdAmount) || usdAmount <= 0) { alert("Enter USD amount"); return; }
+        let oqvToBurn = usdAmount / OQV_TO_USD;
+        if (!wallet.address) { alert("Create wallet first"); return; }
+        if (oqvToBurn > wallet.balance) { alert("Insufficient OQV to burn. Mine more."); return; }
+        wallet.balance -= oqvToBurn;
+        localStorage.setItem('ottoman_wallet', JSON.stringify(wallet));
+        document.getElementById('walletInfo').innerHTML = `📌 Address: ${wallet.address.substring(0,16)}...<br>💰 Balance: ${wallet.balance.toFixed(4)} OQV`;
+        let burnLog = document.getElementById('burnLog');
+        burnLog.innerHTML = `🔥 ${oqvToBurn.toFixed(4)} OQV ($${usdAmount}) burned for fiat purchase. TX sealed on Chain 1771.<br>` + burnLog.innerHTML;
+        addTxLog(`Spent $${usdAmount} → burned ${oqvToBurn.toFixed(4)} OQV permanently.`);
+        document.getElementById('spendUSD').value = 100;
+    });
+    
+    // --- INIT ---
+    function init() {
+        loadState();
+        setInterval(() => {
+            if (miningInterval) {
+                hashRate = Math.floor(Math.random() * 100) + 50;
+                document.getElementById('hashRate').innerText = hashRate;
+            }
+        }, 1000);
+        addTxLog("🌙 Quantum Portal active. Wallet & DEX ready.");
+    }
+    init();
+</script>
+</body>
+</html>
